@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // See the LICENSE file for more information.
 
-import QtQuick 2.15
-import QtGraphicalEffects 1.12
-import QtMultimedia 5.12
+import QtQuick
+import Qt5Compat.GraphicalEffects
+import QtMultimedia
 import "utils.js" as Utils
 
 Item {
@@ -92,17 +92,20 @@ Item {
                 fillMode: VideoOutput.Stretch
                 autoPlay: false
                 loops: 1
-                muted: false
-                volume: getStoredVolume()
                 opacity: 0.0
                 visible: false
+
+                // Qt6: audio properties as custom properties
+                property bool muted: false
+                property real volume: getStoredVolume()
 
                 Behavior on opacity {
                     NumberAnimation { duration: 500 }
                 }
 
-                onStatusChanged: {
-                    if (status === MediaPlayer.Loaded && isCurrentItem && !compactMode) {
+                // Qt6: Use hasVideo to detect when video is ready
+                onHasVideoChanged: {
+                    if (hasVideo && isCurrentItem && !compactMode) {
                         videoPlayer.opacity = 1.0;
                         screenshot.opacity = 0.0;
                         volumeControlContainer.opacity = 1.0;
@@ -111,11 +114,13 @@ Item {
                     }
                 }
 
-                onStopped: {
-                    videoPlayer.opacity = 0.0;
-                    screenshot.opacity = 1.0;
-                    volumeControlContainer.opacity = 0.0;
-                    volumeControlContainer.visible = false;
+                onPlaybackStateChanged: {
+                    if (playbackState === MediaPlayer.StoppedState) {
+                        videoPlayer.opacity = 0.0;
+                        screenshot.opacity = 1.0;
+                        volumeControlContainer.opacity = 0.0;
+                        volumeControlContainer.visible = false;
+                    }
                 }
 
                 onErrorChanged: {

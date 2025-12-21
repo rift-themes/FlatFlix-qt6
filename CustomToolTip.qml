@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // See the LICENSE file for more information.
 
-import QtQuick 2.15
+import QtQuick
 
 Rectangle {
     id: tooltip

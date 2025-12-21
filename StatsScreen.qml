@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // See the LICENSE file for more information.
 
-import QtQuick 2.15
-import QtQuick.Layouts 1.15
-import QtGraphicalEffects 1.12
+import QtQuick
+import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import "utils.js" as Utils
 
 FocusScope {
