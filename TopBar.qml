@@ -17,7 +17,7 @@ Item {
     property var root: null
     property bool isInitialized: false
 
-    signal focusChanged(bool hasFocus)
+    signal topBarFocusChanged(bool hasFocus)
     signal sectionSelected(int index)
 
     Component.onCompleted: {
@@ -162,7 +162,7 @@ Item {
         homeButton.isFocused = isFocused;
         myBitflixButton.isFocused = isFocused;
 
-        focusChanged(isFocused);
+        topBarFocusChanged(isFocused);
     }
 
     onWidthChanged: {

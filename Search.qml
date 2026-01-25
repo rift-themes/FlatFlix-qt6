@@ -442,7 +442,7 @@ FocusScope {
                     width: resultsGrid.cellWidth
                     height: resultsGrid.cellHeight
 
-                    GameCard {
+                    FlatFlixGameCard {
                         id: gameCard
                         anchors.centerIn: parent
                         width: parent.width * 0.95

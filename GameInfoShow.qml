@@ -14,13 +14,12 @@ FocusScope {
 
     anchors.fill: parent
 
-    property bool crtEffectEnabled: api.memory.get("crtEffectEnabled") !== false
+    property bool crtEffectEnabled: api.memory.get("crtEffectEnabled") === true
     property bool isFavorite: gameData ? gameData.favorite : false
     property var getFirstGenreFunction: null
     property bool showing: false
     property var gameData: null
     property string sourceContext: "main"
-    property bool isTogglingFavorite: false
     property int currentButtonIndex: 0
     property bool isLaunching: false
 
@@ -28,7 +27,6 @@ FocusScope {
     visible: opacity > 0
 
     signal launchGame()
-    signal toggleFavorite()
     signal gameInfoClosed()
     signal toggleShader()
     signal closed()
@@ -74,26 +72,8 @@ FocusScope {
     }
 
     function navigateButtons(direction) {
-        if (direction === "down") {
-            currentButtonIndex = (currentButtonIndex + 1) % 3;
-        } else if (direction === "up") {
-            currentButtonIndex = (currentButtonIndex - 1 + 3) % 3;
-        }
-
-        if (currentButtonIndex === 0) {
-            launchButton.forceActiveFocus();
-        } else if (currentButtonIndex === 1) {
-            favoriteButton.forceActiveFocus();
-        } else {
-            shaderButton.forceActiveFocus();
-        }
-    }
-
-    function toggleFavoriteWithLoading() {
-        if (isTogglingFavorite) return;
-
-        isTogglingFavorite = true;
-        favoriteToggleTimer.start();
+        // Only one button now (launch), no navigation needed
+        launchButton.forceActiveFocus();
     }
 
     Timer {
@@ -559,8 +539,8 @@ FocusScope {
 
                         Image {
                             source: "assets/icons/launch.svg"
-                            width: favoriteButton.height * 0.6
-                            height: favoriteButton.height * 0.6
+                            width: launchButton.height * 0.6
+                            height: launchButton.height * 0.6
                             mipmap: true
                             anchors.verticalCenter: parent.verticalCenter
                             layer.enabled: true
@@ -572,7 +552,7 @@ FocusScope {
                         Text {
                             text: "Launch"
                             font.family: global.fonts.sans
-                            font.pixelSize: favoriteButton.height * 0.4
+                            font.pixelSize: launchButton.height * 0.4
                             font.bold: launchButton.activeFocus
                             color: launchButton.activeFocus ? "#000000" : "#ffffff"
                             anchors.verticalCenter: parent.verticalCenter
@@ -621,114 +601,7 @@ FocusScope {
                     }
                 }
 
-                Rectangle {
-                    id: favoriteButton
-                    Layout.preferredWidth: gameInfoShow.width * 0.35
-                    Layout.preferredHeight: gameInfoShow.height * 0.065
-                    color: favoriteButton.activeFocus ? "#ffffff" : "transparent"
-                    radius: 25
-
-                    Row {
-                        anchors {
-                            verticalCenter: parent.verticalCenter
-                            left: parent.left
-                            leftMargin: parent.height * 0.5
-                        }
-                        spacing: parent.height * 0.3
-
-                        Image {
-                            source: {
-                                if (isTogglingFavorite) {
-                                    return isFavorite ? "assets/icons/remove-favorite.svg" : "assets/icons/add-favorite.svg";
-                                } else {
-                                    return isFavorite ? "assets/icons/remove-favorite.svg" : "assets/icons/add-favorite.svg";
-                                }
-                            }
-                            width: favoriteButton.height * 0.6
-                            height: favoriteButton.height * 0.6
-                            mipmap: true
-                            anchors.verticalCenter: parent.verticalCenter
-                            layer.enabled: true
-                            layer.effect: ColorOverlay {
-                                color: favoriteButton.activeFocus ? "#000000" : "#ffffff"
-                            }
-                        }
-
-                        Text {
-                            text: {
-                                if (isTogglingFavorite) {
-                                    return isFavorite ? "Removing..." : "Adding...";
-                                } else {
-                                    return isFavorite ? "Remove from Mi FlatFlix" : "Add to Mi FlatFlix";
-                                }
-                            }
-                            font.family: global.fonts.sans
-                            font.pixelSize: favoriteButton.height * 0.4
-                            font.bold: favoriteButton.activeFocus
-                            color: favoriteButton.activeFocus ? "#000000" : "#ffffff"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: !isTogglingFavorite
-                        onClicked: toggleFavoriteWithLoading()
-                    }
-                }
-
-                Rectangle {
-                    id: shaderButton
-                    Layout.preferredWidth: gameInfoShow.width * 0.35
-                    Layout.preferredHeight: gameInfoShow.height * 0.065
-                    color: shaderButton.activeFocus ? "#ffffff" : "transparent"
-                    radius: 25
-
-                    Row {
-                        anchors {
-                            verticalCenter: parent.verticalCenter
-                            left: parent.left
-                            leftMargin: parent.height * 0.5
-                        }
-                        spacing: parent.height * 0.3
-
-                        Image {
-                            source: "assets/icons/shader.svg"
-                            width: shaderButton.height * 0.6
-                            height: shaderButton.height * 0.6
-                            mipmap: true
-                            anchors.verticalCenter: parent.verticalCenter
-                            layer.enabled: true
-                            layer.effect: ColorOverlay {
-                                color: shaderButton.activeFocus ? "#000000" : "#ffffff"
-                            }
-                        }
-
-                        Text {
-                            text: crtEffectEnabled ? "Disable CRT Effect" : "Enable CRT Effect"
-                            font.family: global.fonts.sans
-                            font.pixelSize: shaderButton.height * 0.4
-                            font.bold: shaderButton.activeFocus
-                            color: shaderButton.activeFocus ? "#000000" : "#ffffff"
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: toggleCrtEffect()
-                    }
-                }
             }
-        }
-    }
-
-    Timer {
-        id: favoriteToggleTimer
-        interval: 1000
-        onTriggered: {
-            gameInfoShow.toggleFavorite();
-            isTogglingFavorite = false;
         }
     }
 
@@ -780,11 +653,6 @@ FocusScope {
         return items;
     }
 
-    function toggleCrtEffect() {
-        crtEffectEnabled = !crtEffectEnabled;
-        api.memory.set("crtEffectEnabled", crtEffectEnabled);
-    }
-
     Component.onCompleted: {
         forceActiveFocus();
         launchButton.forceActiveFocus();
@@ -801,16 +669,7 @@ FocusScope {
             }
             event.accepted = true;
         } else if (!event.isAutoRepeat && api.keys.isAccept(event)) {
-            if (launchButton.activeFocus) {
-                gameInfoShow.launchGame();
-            } else if (favoriteButton.activeFocus && !isTogglingFavorite) {
-                toggleFavoriteWithLoading();
-            } else if (shaderButton.activeFocus) {
-                toggleCrtEffect();
-            }
-            event.accepted = true;
-        } else if (event.key === Qt.Key_F && !isTogglingFavorite) {
-            toggleFavoriteWithLoading();
+            gameInfoShow.launchGame();
             event.accepted = true;
         } else if (event.key === Qt.Key_Down) {
             navigateButtons("down");

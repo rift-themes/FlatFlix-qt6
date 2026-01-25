@@ -7,23 +7,36 @@ import QtQuick
 import Qt5Compat.GraphicalEffects
 import QtQuick.Layouts
 import QtMultimedia
+import Rift 1.0
 import "utils.js" as Utils
 
 FocusScope {
     id: root
 
+    // Hide the global Rift footer - this theme has its own navigation
+    property bool footerVisible: false
+
+    // Menu customization (SELECT, START, Settings) - Netflix style
+    property color menuBackgroundColor: "#141414"
+    property color menuTextColor: "#ffffff"
+    property color menuAccentColor: "#e50914"
+    property color menuSecondaryColor: "#252525"
+    property color menuBorderColor: "#333333"
+    property real menuBackgroundOpacity: 0.98
+    property string menuFontFamily: global.fonts.sans  // Netflix uses Helvetica Neue, we use theme font
+
     property int currentCollectionIndex: 0
     property int currentGameIndex: 0
     property var allCollections: []
-    property bool showAllCollections: topBar.currentSection === 1
-    property bool showFavoritesOnly: topBar.currentSection === 2
+    property bool showAllCollections: true  // Always show all collections (TopBar removed)
+    property bool showFavoritesOnly: false  // Favorites section disabled (TopBar removed)
     property int savedCollectionIndex: 0
     property int savedGameIndex: 0
     property bool gameInfoVisible: false
-    property bool topBarVisible: true
+    property bool topBarVisible: false  // TopBar removed
     property var savedFocusState: null
-    property bool showSearch: topBar.currentSection === 0
-    property bool searchVisible: topBar.currentSection === 0
+    property bool showSearch: false  // Search disabled (TopBar removed)
+    property bool searchVisible: false  // Search disabled (TopBar removed)
     property bool isResettingAfterLaunch: false
     property real themeOpacity: 1.0
 
@@ -42,33 +55,9 @@ FocusScope {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
 
+    // TopBar removed - this function is kept for compatibility but does nothing
     function handleSectionChangeFromTopBar(newSection) {
-        var wasFocused = topBar.isFocused;
-        if (selectedGame && typeof selectedGame.pauseVideo === "function" && selectedGame.isPlaying && newSection !== 0) {
-            selectedGame.pauseVideo();
-        }
-
-        topBar.isFocused = true;
-        topBar.currentSection = newSection;
-
-        if (newSection === 0) {
-            searchVisible = true;
-            topBarVisible = true;
-            if (selectedGame && typeof selectedGame.pauseVideo === "function" && selectedGame.isPlaying) {
-                selectedGame.pauseVideo();
-                selectedGame.wasPlayingBeforeFocusLoss = false;
-            }
-            if (searchComponent) {
-                searchComponent.keyboardFocused = false;
-                searchComponent.genreListFocused = false;
-                searchComponent.resultsGridFocused = false;
-            }
-        } else {
-            searchVisible = false;
-            topBarVisible = true;
-        }
-
-        updateCollectionsList();
+        // No-op - TopBar navigation removed
     }
 
     function showGameInfo() {
@@ -86,8 +75,8 @@ FocusScope {
         savedFocusState = {
             collectionIndex: currentCollectionIndex,
             gameIndex: currentGameIndex,
-            topBarFocused: false,
-            topBarVisible: topBarVisible
+            topBarFocused: false,  // TopBar removed
+            topBarVisible: false  // TopBar removed
         };
 
         topBarVisible = false;
@@ -95,15 +84,13 @@ FocusScope {
         gameInfoVisible = true;
     }
 
+    // TopBar removed - these functions are kept for compatibility
     function setTopBarVisible(visible) {
-        topBarVisible = visible;
+        // No-op - TopBar removed
     }
 
     function restoreTopBarFocus() {
-        topBar.isFocused = true;
-        if (selectedGame && typeof selectedGame.pauseVideo === "function") {
-            selectedGame.pauseVideo();
-        }
+        // No-op - TopBar removed
     }
 
     function launchCurrentGame() {
@@ -113,17 +100,13 @@ FocusScope {
         }
     }
     function resetFocusAfterGameLaunch() {
-        //console.log("Theme: Resetting focus after game launch");
         isResettingAfterLaunch = true;
         gameInfoVisible = false;
         themeOpacity = 1.0;
-        topBarVisible = true;
         savedFocusState = null;
         previousFocusState = null;
         var preLaunchState = api.memory.get("preLaunchState");
         if (preLaunchState && preLaunchState.wasInGameInfo) {
-            //console.log("Theme: Detected launch from GameInfo, restoring main view");
-
             if (preLaunchState.collectionIndex !== undefined && preLaunchState.collectionIndex < allCollections.length) {
                 currentCollectionIndex = preLaunchState.collectionIndex;
             } else {
@@ -136,8 +119,6 @@ FocusScope {
             } else {
                 currentGameIndex = 0;
             }
-
-            topBar.isFocused = false;
 
             api.memory.set("preLaunchState", null);
         } else {
@@ -232,13 +213,7 @@ FocusScope {
     function updateCollectionsList() {
         var newCollections = [];
 
-        if (topBar.currentSection === 2) {
-            var favoritesCollection = createFavoritesCollection();
-            if (favoritesCollection) {
-                newCollections.push(favoritesCollection);
-            }
-        }
-
+        // Always show Home section (Continue Playing + all collections)
         var continueCollection = createContinuePlayingCollection();
         if (continueCollection) {
             newCollections.push(continueCollection);
@@ -249,36 +224,6 @@ FocusScope {
         }
 
         allCollections = newCollections;
-
-        if (topBar.currentSection === 2) {
-            if (api.memory.get("lastSection") !== 2) {
-                api.memory.set("savedCollectionIndex", currentCollectionIndex);
-                api.memory.set("savedGameIndex", currentGameIndex);
-            }
-            currentCollectionIndex = 0;
-            currentGameIndex = 0;
-        } else if (topBar.currentSection === 1) {
-            if (api.memory.get("lastSection") === 2) {
-                var savedCollectionIdx = api.memory.get("savedCollectionIndex");
-                var savedGameIdx = api.memory.get("savedGameIndex");
-
-                if (savedCollectionIdx !== undefined) {
-                    currentCollectionIndex = savedCollectionIdx;
-                    if (savedGameIdx !== undefined) {
-                        var restoredCollection = getCurrentCollection();
-                        if (restoredCollection && savedGameIdx < restoredCollection.games.count) {
-                            currentGameIndex = savedGameIdx;
-                        } else {
-                            currentGameIndex = 0;
-                        }
-                    } else {
-                        currentGameIndex = 0;
-                    }
-                }
-            }
-        }
-
-        api.memory.set("lastSection", topBar.currentSection);
     }
 
     function getCurrentCollection() {
@@ -380,11 +325,11 @@ FocusScope {
             right: parent.right
             topMargin: root.height * 0.03
         }
-        currentSection: 1
+        currentSection: 1  // Always Home section
         isFocused: false
-        visible: topBarVisible
-        opacity: topBarVisible ? 1.0 : 0.0
-        enabled: topBarVisible
+        visible: false  // TopBar removed from UI
+        opacity: 0
+        enabled: false
 
         Behavior on opacity {
             NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
@@ -402,7 +347,7 @@ FocusScope {
             }
         }
 
-        onFocusChanged: {
+        onTopBarFocusChanged: {
             if (hasFocus) {
                 if (selectedGame && typeof selectedGame.pauseVideo === "function") {
                     selectedGame.pauseVideo();
@@ -736,21 +681,18 @@ FocusScope {
         anchors.fill: parent
         anchors.margins: 40
 
-        anchors.topMargin: searchVisible ? 0 : 60
-        visible: !searchVisible
+        anchors.topMargin: 60  // Fixed margin (TopBar removed)
+        visible: true  // Always visible (search disabled)
 
-        Text {
+        // Spacer for layout (TopBar removed)
+        Item {
             id: continueHeader
             anchors {
                 top: parent.top
                 left: parent.left
             }
-            text: "top bar in the future, no remove"
-            font.family: global.fonts.sans
-            font.pixelSize: 28
-            font.bold: true
-            color: "white"
-            visible: false
+            width: 1
+            height: 1
         }
 
         Item {
@@ -800,7 +742,7 @@ FocusScope {
                     }
                     spacing: 20
 
-                    GameCard {
+                    FlatFlixGameCard {
                         id: selectedGame
                         width: contentRow.width * 0.45
                         height: contentRow.height * 0.9
@@ -824,7 +766,7 @@ FocusScope {
                         Repeater {
                             id: gameRepeater
                             model: 3
-                            delegate: GameCard {
+                            delegate: FlatFlixGameCard {
                                 width: (nextGamesContainer.width - 20) / 3
                                 height: nextGamesContainer.height
                                 topBarFocused: topBar.isFocused
@@ -1046,7 +988,7 @@ FocusScope {
                         }
                     }
 
-                    delegate: GameCard {
+                    delegate: FlatFlixGameCard {
                         width: (root.width - 80) * 0.5 / 3 - 7
                         height: ((root.height - 40) * 0.7 * 0.9)
                         gameData: {
@@ -1113,13 +1055,6 @@ FocusScope {
             }
         }
 
-        onToggleFavorite: {
-            toggleCurrentGameFavorite();
-            if (topBar.currentSection === 2) {
-                updateCollectionsList();
-            }
-        }
-
         onClosed: {
             console.log("Theme: GameInfoShow onClosed signal received");
 
@@ -1150,17 +1085,19 @@ FocusScope {
         }
     }
 
-    Search {
-        id: searchComponent
-        anchors.fill: parent
-        visible: searchVisible
-        opacity: searchVisible ? 1.0 : 0.0
-        enabled: visible
-
-        Behavior on opacity {
-            NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
-        }
-    }
+    // Search component disabled - TopBar removed
+    // Search {
+    //     id: searchComponent
+    //     anchors.fill: parent
+    //     visible: searchVisible
+    //     opacity: searchVisible ? 1.0 : 0.0
+    //     enabled: visible
+    //
+    //     Behavior on opacity {
+    //         NumberAnimation { duration: 500; easing.type: Easing.OutCubic }
+    //     }
+    // }
+    property var searchComponent: null  // Placeholder for references
 
     Keys.onPressed: {
         if (statsScreenActive) {
@@ -1197,32 +1134,10 @@ FocusScope {
             return;
         }
 
-        if (api.keys.isCancel(event)) {
-            if (!topBar.isFocused && topBarVisible) {
-                topBar.isFocused = true;
-
-                if (selectedGame && typeof selectedGame.pauseVideo === "function") {
-                    selectedGame.pauseVideo();
-                }
-                event.accepted = true;
-            }
-        } else if (!event.isAutoRepeat && api.keys.isAccept(event) && !topBar.isFocused && topBarVisible) {
+        // TopBar removed - Accept key shows game info directly
+        if (!event.isAutoRepeat && api.keys.isAccept(event)) {
             showGameInfo();
             event.accepted = true;
-        } else if (topBar.isFocused && topBarVisible) {
-            if (event.key === Qt.Key_Left) {
-                topBar.navigate("left");
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Right) {
-                topBar.navigate("right");
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                topBar.sectionSelected(topBar.currentSection);
-                event.accepted = true;
-            } else if (event.key === Qt.Key_Down) {
-                topBar.isFocused = false;
-                event.accepted = true;
-            }
         }
     }
 
@@ -1236,13 +1151,10 @@ FocusScope {
             return;
         }
 
-        if (topBar.isFocused) {
-            event.accepted = true;
-        } else {
-            if (currentCollectionIndex > 0) {
-                currentCollectionIndex--;
-                currentGameIndex = 0;
-            }
+        // Navigate to previous collection
+        if (currentCollectionIndex > 0) {
+            currentCollectionIndex--;
+            currentGameIndex = 0;
         }
     }
 
@@ -1255,28 +1167,11 @@ FocusScope {
             event.accepted = true;
             return;
         }
-        if (topBar.isFocused) {
-            topBar.isFocused = false;
-            event.accepted = true;
 
-            if (searchVisible) {
-                if (searchComponent && typeof searchComponent.takeFocusFromTopBar === "function") {
-                    if (selectedGame && typeof selectedGame.pauseVideo === "function" && selectedGame.isPlaying) {
-                        selectedGame.pauseVideo();
-                        selectedGame.wasPlayingBeforeFocusLoss = false;
-                    }
-                    searchComponent.takeFocusFromTopBar();
-                }
-            } else {
-                if (selectedGame && typeof selectedGame.resumeVideo === "function") {
-                    selectedGame.resumeVideo();
-                }
-            }
-        } else if (!searchVisible) {
-            if (currentCollectionIndex < allCollections.length - 1) {
-                currentCollectionIndex++;
-                currentGameIndex = 0;
-            }
+        // Navigate to next collection
+        if (currentCollectionIndex < allCollections.length - 1) {
+            currentCollectionIndex++;
+            currentGameIndex = 0;
         }
     }
 
@@ -1290,13 +1185,9 @@ FocusScope {
             return;
         }
 
-        if (topBar.isFocused) {
-            topBar.navigate("left");
-            event.accepted = true;
-        } else {
-            if (currentGameIndex > 0) {
-                currentGameIndex--;
-            }
+        // Navigate to previous game
+        if (currentGameIndex > 0) {
+            currentGameIndex--;
         }
     }
 
@@ -1310,20 +1201,15 @@ FocusScope {
             return;
         }
 
-        if (topBar.isFocused) {
-            topBar.navigate("right");
-            event.accepted = true;
-        } else {
-            var collection = getCurrentCollection();
-            if (collection && currentGameIndex < collection.games.count - 1) {
-                currentGameIndex++;
-            }
+        // Navigate to next game
+        var collection = getCurrentCollection();
+        if (collection && currentGameIndex < collection.games.count - 1) {
+            currentGameIndex++;
         }
     }
 
     Component.onCompleted: {
         updateCollectionsList();
-        topBar.root = root;
 
         var preLaunchState = api.memory.get("preLaunchState");
         if (preLaunchState) {
@@ -1333,7 +1219,6 @@ FocusScope {
 
         gameInfoVisible = false;
         themeOpacity = 1.0;
-        topBarVisible = true;
 
         if (currentCollectionIndex >= allCollections.length) {
             currentCollectionIndex = 0;
@@ -1454,14 +1339,22 @@ FocusScope {
     }
 
     onCurrentCollectionIndexChanged: {
-        if (topBar.currentSection === 1) {
-            api.memory.set("savedCollectionIndex", currentCollectionIndex);
+        // Save state for persistence
+        api.memory.set("savedCollectionIndex", currentCollectionIndex);
+        // Notify Rift of the current game for SELECT menu
+        var game = getCurrentGame()
+        if (game && game.extra && game.extra.id) {
+            Rift.setContextGameById(game.extra.id)
         }
     }
 
     onCurrentGameIndexChanged: {
-        if (topBar.currentSection === 1) {
-            api.memory.set("savedGameIndex", currentGameIndex);
+        // Save state for persistence
+        api.memory.set("savedGameIndex", currentGameIndex);
+        // Notify Rift of the current game for SELECT menu
+        var game = getCurrentGame()
+        if (game && game.extra && game.extra.id) {
+            Rift.setContextGameById(game.extra.id)
         }
     }
 
