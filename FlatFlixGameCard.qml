@@ -156,6 +156,19 @@ Item {
                 opacity: screenshot.opacity
             }
 
+            DownloadingSpinner {
+                anchors.fill: parent
+                gameData: gameCard.gameData
+                targetImage: screenshot
+                sourceBinding: function() {
+                    if (gameCard.gameData && gameCard.gameData.assets) {
+                        return gameCard.gameData.assets.background || gameCard.gameData.assets.screenshot || ""
+                    }
+                    return ""
+                }
+                radius: 10
+            }
+
             Rectangle {
                 anchors.fill: parent
                 color: "#141414"
@@ -546,6 +559,18 @@ Item {
                 videoPlayer.source = gameData.assets.video;
             } else {
                 //console.log("GameCard: Skipping video start - gameInfoActive:", gameInfoActive);
+            }
+        }
+    }
+
+    // Listen for video downloads completing
+    Connections {
+        target: typeof Rift !== "undefined" ? Rift : null
+        function onGameVideoUpdated(updatedGameId) {
+            if (gameData && gameData.extra && updatedGameId === gameData.extra.id) {
+                if (isCurrentItem && !compactMode && !topBarFocused && !gameInfoActive) {
+                    handleGameChange()
+                }
             }
         }
     }
